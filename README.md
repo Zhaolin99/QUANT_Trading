@@ -36,3 +36,29 @@ python3 -m venv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
+
+
+---
+## RUN
+
+```bash
+python main.py --symbol 0700.HK --interval 60m --period 730d --proba_th 0.55
+
+---
+## 📌 Roadmap
+  Stage	Target
+✅ v0	Logistic Regression + 60m + vectorbt
+🔜 v1	Multi-asset support
+🔜 v2	Chronos / TimesFM / TFT
+🔜 v3	Live trading interface (Paper Trading)
+🔜 v4	Broker integration, HK fees simulation
+
+## 📂 Folder Layout
+
+Follow main.py → data/downloader.py → models/* → signals/adapter.py → backtest/vectorbt_engine.py
+
+## 🧪 Test new models
+
+Replace model file under models/, output pd.Series, call adapter.
+
+

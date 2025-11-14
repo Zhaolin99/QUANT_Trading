@@ -82,6 +82,7 @@ def download_ohlcv(
 	auto_adjust: bool = True,
 	max_retries: int = 3,
 	backoff_sec: float = 1.0,
+	force_remote: bool = False,
 ) -> pd.DataFrame:
 	"""Download OHLCV for a single symbol using yfinance and convert to HK timezone.
 
@@ -111,15 +112,16 @@ def download_ohlcv(
 
 	# Wrap yfinance call with simple retry/backoff to handle transient rate limits
 
-	# Always prefer local CSV when present (project requirement)
-	local = load_local_ohlcv(symbol)
-	if local is not None:
-		# ensure columns are in expected order
-		cols = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in local.columns]
-		out = local[cols].dropna()
-		if out.empty:
-			raise ValueError(f"Local CSV for {symbol} found but contains no usable rows.")
-		return out
+	# Prefer local CSV when present unless caller forces remote
+	if not force_remote:
+		local = load_local_ohlcv(symbol)
+		if local is not None:
+			# ensure columns are in expected order
+			cols = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in local.columns]
+			out = local[cols].dropna()
+			if out.empty:
+				raise ValueError(f"Local CSV for {symbol} found but contains no usable rows.")
+			return out
 	last_exc = None
 	for attempt in range(1, max_retries + 1):
 		try:

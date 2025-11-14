@@ -23,6 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--interval", default="60m", help="Bar interval, e.g., 60m or 1d")
     parser.add_argument("--proba_th", type=float, default=0.55, help="Probability threshold for long entries")
     parser.add_argument("--train_ratio", type=float, default=DEFAULT_CONFIG["train_ratio"], help="Train split ratio")
+    parser.add_argument("--force-remote", action="store_true", help="Ignore local CSVs and force remote yfinance download")
     return parser.parse_args()
 
 
@@ -46,8 +47,8 @@ def safe_print_stats(stats) -> None:
 def main() -> None:
     args = parse_args()
 
-    # 1) Data
-    df = download_ohlcv(args.symbol, args.period, args.interval)
+    # 1) Data — download_ohlcv prefers local CSVs; use --force-remote to bypass
+    df = download_ohlcv(symbol=args.symbol, period=args.period, interval=args.interval, force_remote=args.force_remote)
 
     # 2) Train + Predict (model outputs proba for the test range)
     test_index, proba_up = train_predict(df, train_ratio=args.train_ratio)

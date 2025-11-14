@@ -81,6 +81,37 @@ pip install -r requirements.txt
 
 注意：yfinance 有速率限制（YFRateLimitError）。如遇到空数据或限流，请采用短周期/日线数据或本地缓存（参见第 8 章的本地模式）。
 
+本地 CSV 模式 (user-provided)
+--------------------------------
+
+- 如果你已经手工准备了历史数据 CSV 文件（例如：`data/0700.HK.csv`, `data/0005.HK.csv`），仓库会优先使用这些本地文件而不是去 yfinance 下载。
+- 本仓库约定的 CSV 列格式：第一列为日期（列名 `date` 或作为第一列索引），其余列包含 `Close, High, Low, Open, Volume`。日期为日线（`1d`）频率，时区可留空（tz-naive）。
+- 使用本地 CSV 的好处：避免 yfinance 的限流、可保证数据可重复性、支持完整历史（例如 10-15 年）。请将 CSV 放到仓库根的 `data/` 目录下，且文件名与 ticker 完全匹配（比如 `0700.HK.csv`）。
+- If you already prepared local CSVs, the repository will always use them instead of yfinance. The current two files present in the `data/` folder are:
+
+  - `data/0700.HK_historical_data.csv`
+  - `data/0883.HK_historical_data.csv`
+
+  These files will be used automatically. The loader also accepts the simpler pattern `data/{TICKER}.csv` if you use that naming convention in future.
+
+- CSV schema requirements (as provided):
+  - columns (order not strict): `date`, `Close`, `High`, `Low`, `Open`, `Volume`.
+  - `date` is the first column or explicitly named `date` and represents daily bars (1d frequency).
+  - timestamps may be tz-naive; the code will not enforce timezone conversion for local CSVs.
+
+- Model training note: training in this repo is done on a single stock at a time. Place the desired ticker CSV in `data/` and call the pipeline with that symbol. Future runs may switch the symbol to another CSV of the same schema.
+
+- Benefits: using local CSVs avoids yfinance rate limits and ensures reproducible full-history runs (10-15 years).
+
+示例（本地模式优先）：
+
+```python
+from data.downloader import download_ohlcv
+
+# if data/0700.HK.csv exists, download_ohlcv will load it and return a DataFrame
+df = download_ohlcv('0700.HK')
+```
+
 环境变量（示例）
 
 | 变量 | 说明 | 示例 |
@@ -110,7 +141,7 @@ pip install -r requirements.txt
 接口要点（契约）：
 
 - 输入（模型）：
-  - 类型：pd.DataFrame（OHLCV，tz-aware index）
+  - 类型：pd.DataFrame（OHLCV）。当使用远程下载（yfinance）时，index 建议为 tz-aware（Asia/Hong_Kong）；当使用本地 CSV 时，index 可能为 tz-naive（本仓库默认接受 tz-naive 日线数据）。
   - 必有列：`Close`, `Volume`（若特征使用其它列，请在模型实现中做兼容处理）
   - 索引：时间序列，必须为 pd.DatetimeIndex，建议时区为 `Asia/Hong_Kong`。
 - 输出（模型）：
